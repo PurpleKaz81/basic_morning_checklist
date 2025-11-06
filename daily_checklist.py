@@ -355,14 +355,17 @@ def generate_html(data):
 
     <script>
         const WAKE_TARGET = '06:00';
+        const STORAGE_KEY = 'morningChecklistState';
+        const TODAY = '{datetime.now().date()}';
 
         function startClock() {{
             const el = document.getElementById('wake-clock');
+            if (!el) return;
             function tick() {{
                 const now = new Date();
                 const hh = String(now.getHours()).padStart(2,'0');
                 const mm = String(now.getMinutes()).padStart(2,'0');
-                el.textContent = ` ${{hh}}:${{mm}} `;
+                el.textContent = `${{hh}}:${{mm}}`;
             }}
             tick();
             setInterval(tick, 1000);
@@ -374,15 +377,35 @@ def generate_html(data):
             return (h1*60 + m1) - (h2*60 + m2);
         }}
 
-        function toggleItem(id) {{
-            // For generator-based page, just reload so server can update
-            window.location.reload();
+        function loadState() {{
+            try {{
+                const raw = localStorage.getItem(STORAGE_KEY + '_' + TODAY);
+                return raw ? JSON.parse(raw) : {{ items: {{}}, wakeTime: null }};
+            }} catch (e) {{
+                return {{ items: {{}}, wakeTime: null }};
+            }}
+        }}
+
+        function saveState(state) {{
+            localStorage.setItem(STORAGE_KEY + '_' + TODAY, JSON.stringify(state));
+        }}
+
+        function onCheckboxChange(id, checkbox, itemEl) {{
+            const state = loadState();
+            state.items = state.items || {{}};
+            state.items[id] = checkbox.checked;
+            if (checkbox.checked) itemEl.classList.add('completed'); else itemEl.classList.remove('completed');
+            saveState(state);
+            updateProgress();
         }}
 
         function submitWakeTime() {{
-            const wakeTime = document.getElementById('wake-time').value;
+            const wakeInput = document.getElementById('wake-time');
+            const wakeTime = wakeInput && wakeInput.value;
             if (!wakeTime) {{ alert('Please enter a wake time'); return; }}
-            // For now, set local late result display only
+            const state = loadState();
+            state.wakeTime = wakeTime;
+            saveState(state);
             const diff = compareTimes(wakeTime, WAKE_TARGET);
             const lateEl = document.getElementById('late-result');
             if (diff > 0) {{
@@ -393,13 +416,51 @@ def generate_html(data):
                 lateEl.style.borderColor = '#f5c6cb';
             }} else {{
                 lateEl.style.display = 'none';
+                // if on time or early, mark item 1 completed
+                const item1 = document.querySelector('.checklist-item[data-id="1"]');
+                if (item1) {{
+                    const cb = item1.querySelector('input[type="checkbox"]');
+                    if (cb) {{ cb.checked = true; item1.classList.add('completed'); state.items = state.items || {{}}; state.items['1'] = true; saveState(state); updateProgress(); }}
+                }}
             }}
+        }}
+
+        function updateProgress() {{
+            const items = document.querySelectorAll('.checklist-item');
+            const total = items.length;
+            let completed = 0;
+            items.forEach(item => {{ if (item.classList.contains('completed')) completed++; }});
+            const fill = document.querySelector('.progress-fill');
+            const text = document.querySelector('.progress-text');
+            const percent = total ? Math.round((completed/total)*100) : 0;
+            if (fill) fill.style.width = percent + '%';
+            if (text) text.textContent = `${{completed}} of ${{total}} completed`;
         }}
 
         document.addEventListener('DOMContentLoaded', () => {{
             startClock();
+            const state = loadState();
+            // restore wake time late display
+            if (state.wakeTime) {{
+                const diff = compareTimes(state.wakeTime, WAKE_TARGET);
+                const lateEl = document.getElementById('late-result');
+                if (diff > 0) {{ lateEl.style.display = 'block'; lateEl.textContent = `⏰ ${{diff}} minute${{diff!==1? 's' : ''}} late`; }}
+                const wakeInput = document.getElementById('wake-time'); if (wakeInput) wakeInput.value = state.wakeTime;
+            }}
+
+            // wire checkboxes
+            const items = document.querySelectorAll('.checklist-item');
+            items.forEach(item => {{
+                const id = item.getAttribute('data-id');
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (!checkbox) return;
+                if (state.items && state.items[id]) {{ checkbox.checked = true; item.classList.add('completed'); }}
+                checkbox.addEventListener('change', () => onCheckboxChange(id, checkbox, item));
+            }});
+
             const btn = document.getElementById('wake-submit');
             if (btn) btn.addEventListener('click', submitWakeTime);
+            updateProgress();
         }});
     </script>
 </body>
