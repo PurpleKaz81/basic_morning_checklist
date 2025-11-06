@@ -1,0 +1,56 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "task": "Did you wake up at 06:00 today? Yes or no.",
+      "completed_today": false,
+      "last_completed": null,
+      "has_followup": true,
+      "actual_wake_time": "06:45",
+      "minutes_late": 45
+    },
+    {
+      "id": 2,
+      "task": "Did you take your morning medications? Yes or no.",
+      "completed_today": true,
+      "last_completed": null
+    },
+    {
+      "id": 3,
+      "task": "Did you put on sunscreen?",
+      "completed_today": true,
+      "last_completed": null
+    },
+    {
+      "id": 4,
+      "task": "Did you walk outside for 15 min.?",
+      "completed_today": false,
+      "last_completed": null
+    },
+    {
+      "id": 5,
+      "task": "Did you take a cold shower and brush your teeth?",
+      "completed_today": false,
+      "last_completed": null
+    },
+    {
+      "id": 6,
+      "task": "Did you exercise properly?",
+      "completed_today": false,
+      "last_completed": null
+    },
+    {
+      "id": 7,
+      "task": "Did you have a protein-filled breakfast?",
+      "completed_today": false,
+      "last_completed": null
+    },
+    {
+      "id": 8,
+      "task": "Did you start work between 08:30 and 09:00?",
+      "completed_today": false,
+      "last_completed": null
+    }
+  ],
+  "last_reset": "2025-11-06"
+}
